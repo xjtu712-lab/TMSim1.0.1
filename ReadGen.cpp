@@ -72,12 +72,12 @@ typedef struct {
 
 
 /**********************************************/
-int MAXSS = pow(2, 31)-1;
-static double zrand(int max){
+//int MAXSS = pow(2, 31)-1;
+static double zrand(){
 	static double r;
 	int n;
-	n = rand() % max;
-	r = 1.0*n/max;
+	n = rand() % RAND_MAX;
+	r = 1.0*n/RAND_MAX;
 	return r;
 }
 
@@ -86,8 +86,8 @@ static double zrand(int max){
 static double zt_stdfun(){
 	static double v1,v2,s;
 	do {
-		v1 = zrand(MAXSS);
-		v2 = zrand(MAXSS);
+		v1 = zrand();
+		v2 = zrand();
 		s = 1.0*cos(2*3.1415926*v1)*sqrt(-2*log(v2));
 	} while(s>2 || s<-2);
 	return s;
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
 	mutseq_t sim[2];
 	indel_t  indelp;
 
-	srand(unsigned (time(0)));  // Init Random data 
+	srand((int)time(0)); // Init Random data 
 	srand48(time(0));
 	indelf[0]='\0'; outrightf[0]='\0'; outresultf[0]='\0';
 	cc=0;
@@ -506,7 +506,7 @@ static int out_read(int l_beg, int r_end, char *l_readmk, char *r_readmk, int pr
 
 	err_num=0; total_err=0;
 	for (j=0;j<LREAD_LEN;j++){
-		if (zrand(MAXSS)<ERROR_RATE){ err_num++; total_err++; }
+		if (zrand()<ERROR_RATE){ err_num++; total_err++; }
 		if (n2 == 0) left[j] = qseq[n1][0].s[l_beg+j];
 		else left[j] = qseq[n1][1].s[r_end-j];
 	}
@@ -518,14 +518,14 @@ static int out_read(int l_beg, int r_end, char *l_readmk, char *r_readmk, int pr
 			k = k % LREAD_LEN;
 			n = LREAD_LEN-1-k;
 			k = gch_to_num(left[n]);
-			k = (k + (int)(zrand(MAXSS) * 3.0 + 1)) & 3;
+			k = (k + (int)(zrand() * 3.0 + 1)) & 3;
 			left[n] = num_to_gch(k);
 		}
 	}
 
 	err_num=0;
 	for (j=0;j<RREAD_LEN;j++){
-		if (zrand(MAXSS)<ERROR_RATE) { err_num++; total_err++; }
+		if (zrand()<ERROR_RATE) { err_num++; total_err++; }
 		if (n2 == 0) right[j] = qseq[n1][1].s[r_end-j];
 		else right[j] = qseq[n1][0].s[l_beg+j];
 	}
@@ -537,7 +537,7 @@ static int out_read(int l_beg, int r_end, char *l_readmk, char *r_readmk, int pr
 			k = k % RREAD_LEN;
 			n = RREAD_LEN-1-k;
 			k = gch_to_num(right[n]);
-			k = (k + (int)(zrand(MAXSS) * 3.0 + 1)) & 3;
+			k = (k + (int)(zrand() * 3.0 + 1)) & 3;
 			right[n] = num_to_gch(k);
 		}
 	}
@@ -569,9 +569,9 @@ void  beg_end(int msk, int &beg, int &end, int len){
 	switch(msk){
 	case 1:	end = beg + pair_reads_dis - 1;	break;
 	case 2: beg = end - pair_reads_dis + 1; break;
-	case 0:	//k = (int)(1.0*zrand(MAXSS)*len);
+	case 0:	//k = (int)(1.0*zrand()*len);
 		while (1){
-			beg = zrand(MAXSS)*len;
+			beg = zrand()*len;
 			if(beg + pair_reads_dis - 1 < len) break; 
 		}
 		end = beg + pair_reads_dis - 1;
@@ -609,8 +609,8 @@ int gen_pair_reads(seq_t qseq[2][2], char *ref_n)
 
 	//PAIR_READS_NUM = PAIR_READS_NUM - pr_no;
 	while (pr_no<PAIR_READS_NUM){ 
-		m = zrand(MAXSS)<0.5? 0:1;
-		k = zrand(MAXSS)<0.5? 0:1;
+		m = zrand()<0.5? 0:1;
+		k = zrand()<0.5? 0:1;
 		beg_end(0, l_beg, r_end, qseq[m][k].l);
 		//generate one pair_ends reads.
 		n = out_read(l_beg, r_end, l_readmk, r_readmk, pr_no, qseq, m, k, ref_n);
@@ -642,7 +642,7 @@ static int out_single_read(int beg, char *readmk, int pr_no, seq_t qseq[2][2], i
 
 	err_num=0; total_err=0;
 	for (j=0;j<LREAD_LEN;j++){
-		if (zrand(MAXSS)<ERROR_RATE){ err_num++; total_err++; }
+		if (zrand()<ERROR_RATE){ err_num++; total_err++; }
 		if (n2==0) left[j] = qseq[n1][0].s[beg+j]; 
 		else left[j] = qseq[n1][1].s[beg+LREAD_LEN-1-j];
 	}
@@ -654,7 +654,7 @@ static int out_single_read(int beg, char *readmk, int pr_no, seq_t qseq[2][2], i
 			k = k % LREAD_LEN;
 			n = LREAD_LEN-1-k;
 			k = gch_to_num(left[n]);
-			k = (k + (int)(zrand(MAXSS) * 3.0 + 1)) & 3;
+			k = (k + (int)(zrand() * 3.0 + 1)) & 3;
 			left[n] = num_to_gch(k);
 		}
 	}
@@ -691,10 +691,10 @@ int gen_single_read(seq_t qseq[2][2], char *ref_n)
 
 	//PAIR_READS_NUM = PAIR_READS_NUM - pr_no;
 	while (pr_no<PAIR_READS_NUM){
-		m=zrand(MAXSS)<0.5? 0:1;
-		k=zrand(MAXSS)<0.5? 0:1;
+		m=zrand()<0.5? 0:1;
+		k=zrand()<0.5? 0:1;
 		do{
-			beg = zrand(MAXSS) * qseq[m][k].l;
+			beg = zrand() * qseq[m][k].l;
 		}while(beg+LREAD_LEN >= qseq[m][k].l);
 		//generate one pair_ends reads.
 		n = out_single_read(beg, readmk, pr_no, qseq, m, k, ref_n);

@@ -72,12 +72,12 @@ typedef struct {
 
 
 /**********************************************/
-int MAXSS = pow(2, 31)-1;
-static double zrand(int max){
+//int MAXSS = pow(2, 31)-1;
+static double zrand(){
 	static double r;
 	int n;
-	n = rand() % max;
-	r = 1.0*n/max;
+	n = rand() % RAND_MAX;
+	r = 1.0*n/RAND_MAX;
 	return r;
 }
 
@@ -86,8 +86,8 @@ static double zrand(int max){
 static double zt_stdfun(){
 	static double v1,v2,s;
 	do {
-		v1 = zrand(MAXSS);
-		v2 = zrand(MAXSS);
+		v1 = zrand();
+		v2 = zrand();
 		s = 1.0*cos(2*3.1415926*v1)*sqrt(-2*log(v2));
 	} while(s>2 || s<-2);
 	return s;
@@ -195,30 +195,33 @@ int set_pos_sim(mutseq_t *hap1, mutseq_t *hap2, int k){ // return chged num
 	c0 = ret[0]->s[k];
 	c1 = ret[1]->s[k];
 	chgnum = 1;
-	if (drand48() >= INDEL_FRAC) { // substitution
-		r = drand48();
+	if (zrand() >= INDEL_FRAC) { // substitution
+		r = zrand();
+
+		cout<<"r:"<<r<<endl;
+
 		c = (c0 + (int)(r * 3.0 + 1)) & 3;
-		if (drand48() < BB_RATE) { //hom
+		if (zrand() < BB_RATE) { //hom
 			ret[0]->s[k] = SUBSTITUTE|GTYPEBB|c;
 			ret[1]->s[k] = SUBSTITUTE|GTYPEBB|c;
 		} else { // het
-			tmp = drand48()<0.5?0:1;
+			tmp = zrand()<0.5?0:1;
 			ret[tmp]->s[k] = SUBSTITUTE|GTYPEAB|c;
 		}
 	} else { // indel
-		if (drand48() < DEL_RATE) { // deletion
-			if (drand48() < BB_RATE ) { // hom-del
+		if (zrand() < DEL_RATE) { // deletion
+			if (zrand() < BB_RATE ) { // hom-del
 				ret[0]->s[k] |= DELETE|GTYPEBB;
 				ret[1]->s[k] |= DELETE|GTYPEBB;
 	            deleting = 3;
 			} else { // het-del
-				deleting = drand48()<0.5? 1:2;
+				deleting = zrand()<0.5? 1:2;
 				ret[deleting-1]->s[k] |= DELETE|GTYPEAB;
 			}
 			k++;
 			c0 = ret[0]->s[k];
 			c1 = ret[1]->s[k];
-			while(drand48()<INDEL_EXTEND  && k < max && c0 < 4 && c1 < 4 ) {
+			while(zrand()<INDEL_EXTEND  && k < max && c0 < 4 && c1 < 4 ) {
 				if (deleting<3) ret[deleting-1]->s[k] |= DELETE|GTYPEAB; 
         		else ret[1]->s[k] = ret[0]->s[k] |= DELETE|GTYPEBB; 
 				chgnum++;
@@ -230,13 +233,13 @@ int set_pos_sim(mutseq_t *hap1, mutseq_t *hap2, int k){ // return chged num
 			int num_ins = 0, ins = 0;
 			do {
 				num_ins++;
-				ins = (ins << 2) | (int)(drand48()*4.0);
-			} while (num_ins < 10 && (drand48() < INDEL_EXTEND) );
+				ins = (ins << 2) | (int)(zrand()*4.0);
+			} while (num_ins < 10 && (zrand() < INDEL_EXTEND) );
 			chgnum = num_ins; //insert number ;
-			if (drand48() < BB_RATE ) { // hom-ins
+			if (zrand() < BB_RATE ) { // hom-ins
 				ret[0]->s[k] = ret[1]->s[k] = (num_ins << 28) | (ins << 8) | INSERT | GTYPEBB | c0;
 			} else { // het-ins
-				tmp = drand48()<0.5?0:1;
+				tmp = zrand()<0.5?0:1;
 				ret[tmp]->s[k] = (num_ins << 28) | (ins << 8) | INSERT | GTYPEAB | c0;
 			}
 		}
@@ -258,11 +261,11 @@ void set_mut_sim(mutseq_t *hap1, mutseq_t *hap2)
 	num = ret[0]->gnum * GV_MUT_RATE - ret[0]->vnum;
 	n = 0;
 	while(n < num){ //set mutation and not normal AB mode
-		k = drand48()*max;
+		k = zrand()*max;
 		c0 = ret[0]->s[k];
 		c1 = ret[1]->s[k];
 		while ( c0 >= 4 || c1 >= 4){
-			k = drand48()*max;
+			k = zrand()*max;
 			c0 = ret[0]->s[k];
 			c1 = ret[1]->s[k];
 		}
@@ -332,7 +335,7 @@ void init_indel_sim( seq_t *seq, mutseq_t *hap1, mutseq_t *hap2, indel_t *indelp
 			if (idbeg<0 || idbeg+idlen>=REF_LEN) gtype=-1;
 			switch(gtype){
 			case 0: break;
-			case 1: if (zrand(MAXSS)<0.5) for (int i=0; i<idlen; i++) ret[0]->s[idbeg+i] |= DELETE|GTYPEAB;
+			case 1: if (zrand()<0.5) for (int i=0; i<idlen; i++) ret[0]->s[idbeg+i] |= DELETE|GTYPEAB;
 				else for (int i=0; i<idlen; i++) ret[1]->s[idbeg+i] |= DELETE|GTYPEAB;
 				n1 = n1 + idlen;
 				del_no ++;
@@ -349,7 +352,7 @@ void init_indel_sim( seq_t *seq, mutseq_t *hap1, mutseq_t *hap2, indel_t *indelp
 			if (idbeg<0 || idbeg+idlen>=REF_LEN || idnum<1) gtype=-1;
 			switch(gtype){
 			case 0: break;
-			case 1: h = (int)(zrand(MAXSS)*2);
+			case 1: h = (int)(zrand()*2);
 				ret[h]->s[idbeg] = (ret[h]->s[idbeg] & 0x03 );
 				ret[h]->s[idbeg] |= (LONGINMK|INSERT|GTYPEAB|(in_no<<8));
 				break;
@@ -369,23 +372,23 @@ void init_indel_sim( seq_t *seq, mutseq_t *hap1, mutseq_t *hap2, indel_t *indelp
 					for(i=0; i<strlen(idstr); i++) idmark[i] = 0;
 					res_num = idnum;
 					while(res_num>4){
-						k = zrand(MAXSS)*(0.5*res_num-1)+1;
+						k = zrand()*(0.5*res_num-1)+1;
 						for(i=0; i<k; i++) addinsert_iterm(indelp, idno, idbeg, idlen, gtype, idnum, idvar, idstr, &n2);
 						res_num = res_num - k;
-						j = zrand(MAXSS)*strlen(idstr);
-						while (idmark[j]) j = zrand(MAXSS)*strlen(idstr);
+						j = zrand()*strlen(idstr);
+						while (idmark[j]) j = zrand()*strlen(idstr);
 						idmark[j] = 1;
-						i = (gch_to_num(idstr[j]) + (int)(zrand(MAXSS)* 3.0 + 1)) & 3;
+						i = (gch_to_num(idstr[j]) + (int)(zrand()* 3.0 + 1)) & 3;
 						idstr[j] = num_to_gch(i);
 					}
 					if (res_num>1){
-						k = zrand(MAXSS)*(res_num-1)+1;
+						k = zrand()*(res_num-1)+1;
 						for(i=0; i<k; i++) addinsert_iterm(indelp, idno, idbeg, idlen, gtype, idnum, idvar, idstr, &n2);
 						res_num = res_num - k;
-						j = zrand(MAXSS)*strlen(idstr);
-						while (idmark[j]) j = zrand(MAXSS)*strlen(idstr);
+						j = zrand()*strlen(idstr);
+						while (idmark[j]) j = zrand()*strlen(idstr);
 						idmark[j] = 1;
-						i = (gch_to_num(idstr[j]) + (int)(zrand(MAXSS)* 3.0 + 1)) & 3;
+						i = (gch_to_num(idstr[j]) + (int)(zrand()* 3.0 + 1)) & 3;
 						idstr[j] = num_to_gch(i);
 						for(i=0; i<res_num; i++) addinsert_iterm(indelp, idno, idbeg, idlen, gtype, idnum, idvar, idstr, &n2);
 					}else if (res_num == 1) addinsert_iterm(indelp, idno, idbeg, idlen, gtype, idnum, idvar, idstr, &n2);
@@ -482,7 +485,8 @@ int main(int argc, char *argv[])
 	char ref_name[50];
 	indel_t  indelp;
 
-	srand48(time(0)); 
+	//srand48(time(0)); 
+	srand((int)time(0));
 	outresultf[0]='\0';
 	indelf[0]='\0';
 	cc=0;
